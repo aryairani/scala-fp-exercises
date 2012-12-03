@@ -35,9 +35,21 @@ object util {
       case (k,v) => decode(k) -> v.map(decode)
     }
 
-    val params = s.split('&')
-    val decodedPairs = params map splitPair filter { ! _._1.isEmpty } map decodePair
+    /*
+      1. Split the url-encoded string at '&' boundaries, yielding an Array[String]
+      2. Eliminate any empty strings
+      3. Use the splitPair function to split pieces at '=' boundary (if present),
+           yielding a (String, Option[String]) tuple.
+      4. Use the decodePair function to URL-decode each key and value
+     */
+    val decodedPairs = (
+      s split '&'
+        filter { ! _.isEmpty }
+        map splitPair
+        map decodePair
+      )
 
+    // Return a Map of the decoded pairs
     Map(decodedPairs: _*)
 
   }
