@@ -1,0 +1,1 @@
+Some exercises inspired by "Real World Haskell" http://book.realworldhaskell.org/
