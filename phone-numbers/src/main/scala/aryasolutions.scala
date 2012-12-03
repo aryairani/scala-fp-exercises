@@ -1,49 +1,165 @@
 object aryasolutions {
   import phonenumbers._
 
-  val v0 = new Lookup {
-    
+  /*
+    Look up a value in an association list (alist)
+   */
+  def lookup[K,V](k: K, l: List[(K,V)]): Option[V] = (k,l) match {
+    case (_, Nil) =>
+      None
+    case (key, (k,v)::rest) =>
+      if (k == key)
+        Some(v)
+      else lookup(k, rest)
   }
 
-  def lookup[K,V](k: K, l: List[(K,V)]): Option[V] = l find (_._1 == k) map (_._2)
-  def contextIs(c: Context): PhoneEntry => Boolean = _._1 == c
-  def phoneFromEntry: PhoneEntry => Phone = _._2
+  object v_1 extends Lookup {
+    /*
+      Look up first Home number, and if defined, use it; otherwise look up first mobile number, and use it.
+     */
+    def onePersonalPhone(db: phonenumbers.PhoneDB): Option[Phone] = {
+      val homeOption = lookup(Home, db)
+      if (homeOption.isDefined) homeOption
+      else lookup(Mobile, db)
+    }
+
+    /*
+      orElse lets you chain Options together
+     */
+    def oneBusinessPhone(db: phonenumbers.PhoneDB): Option[Phone] =
+      lookup(Home, db) orElse lookup(Mobile, db)
+
+
+    /*
+      filter (higher-order function) and then map (hof) and then append
+     */
+    def allPersonalPhones(db: phonenumbers.PhoneDB): List[Phone] = {
+      val homeNumberList = db.filter(contextIsHome).map(getNumber)
+      val mobileNumberList = db.filter(contextIsMobile).map(getNumber)
+      homeNumberList ++ mobileNumberList
+    }
+    def contextIsHome(e: PhoneEntry) = { e._1 == Home }
+    def contextIsMobile(e: PhoneEntry) = { e._1 == Mobile }
+    def contextIsBusiness(e: PhoneEntry) = { e._1 == Business }
+    def getNumber(e: PhoneEntry) = e._2
+
+    /*
+      append and then map
+     */
+    def allBusinessPhones(db: phonenumbers.PhoneDB): List[Phone] =
+      db.filter(contextIsBusiness) ++ db.filter(contextIsMobile) map (getNumber)
+  }
+
+  object v0 extends Lookup {
+    def contextIsHome(e: PhoneEntry) = { e._1 == Home }
+    def contextIsMobile(e: PhoneEntry) = { e._1 == Mobile }
+    def contextIsBusiness(e: PhoneEntry) = { e._1 == Business }
+
+    /**
+     * Return one Home phone if known, otherwise one Mobile phone if known
+     */
+    def onePersonalPhone(db: phonenumbers.PhoneDB): Option[Phone] = {
+      val homeOption = db.find(contextIsHome)
+      if (homeOption.isDefined)
+        Some(homeOption.get._2)
+      else {
+        val mobileOption = db.find(contextIsMobile)
+        if (mobileOption.isDefined)
+          Some(mobileOption.get._2)
+        else None
+      }
+    }
+
+    /**
+     * Return one Business phone if known, otherwise one Mobile phone if known
+     */
+    def oneBusinessPhone(db: phonenumbers.PhoneDB): Option[Phone] = {
+      val businessNumberOption = db.find(contextIsBusiness).map(getNumber)
+      val mobileNumberOption = db.find(contextIsMobile).map(getNumber)
+      businessNumberOption orElse mobileNumberOption
+    }
+    def getNumber(e: PhoneEntry) = e._2
+
+    /**
+     * Return all Home phones followed by all Mobile phones
+     */
+    def allPersonalPhones(db: phonenumbers.PhoneDB): List[Phone] = {
+      val homeNumberList = db.filter(contextIsHome).map(getNumber)
+      val mobileNumberList = db.filter(contextIsMobile).map(getNumber)
+      homeNumberList ++ mobileNumberList
+    }
+
+    /**
+     * Return all Business phones followed by all Mobile phones
+     */
+    def allBusinessPhones(db: phonenumbers.PhoneDB): List[Phone] = {
+      val businessNumberList = db.filter(contextIsBusiness).map(getNumber)
+      val mobileNumberList = db.filter(contextIsMobile).map(getNumber)
+      businessNumberList ++ mobileNumberList
+    }
+  }
 
   /*
-
+    a single contextIs(c) instead of individual contextIs_____ functions
+    contextIs returns a function
    */
-  val v1 = new Lookup {
-    def onePersonalPhone(db: PhoneDB) =
-      lookup(Home, db) orElse
-        lookup(Mobile, db)
+  def contextIs(c: Context) = { (e: PhoneEntry) => e._1 == c }
+  import v0.getNumber
 
-    def oneBusinessPhone(db: PhoneDB) = lookup(Business, db) orElse lookup(Mobile, db)
+  object v12 extends Lookup {
+    def onePersonalPhone(db: PhoneDB) =
+      lookup(Home, db) orElse lookup(Mobile, db)
+
+    def oneBusinessPhone(db: PhoneDB) =
+      lookup(Business, db) orElse lookup(Mobile, db)
 
     def allPersonalPhones(db: PhoneDB) =
-      (db filter contextIs(Home)) ++ (db filter contextIs(Mobile)) map phoneFromEntry
+      (db filter contextIs(Home)) ++ (db filter contextIs(Mobile)) map getNumber
 
     def allBusinessPhones(db: PhoneDB) =
-      (db filter contextIs(Business)) ++ (db filter contextIs(Mobile)) map phoneFromEntry
+      (db filter contextIs(Business)) ++ (db filter contextIs(Mobile)) map getNumber
+
+  }
+
+  /*
+    Same as previous, but using `db.find` and `map`, instead of `lookup`
+   */
+  object v11 extends Lookup {
+    def onePersonalPhone(db: PhoneDB) =
+      db.find(contextIs(Home)) orElse db.find(contextIs(Mobile)) map getNumber
+
+    def oneBusinessPhone(db: PhoneDB) =
+      db.find(contextIs(Business)) orElse db.find(contextIs(Mobile)) map getNumber
+
+    def allPersonalPhones(db: PhoneDB) =
+      (db filter contextIs(Home)) ++ (db filter contextIs(Mobile)) map getNumber
+
+    def allBusinessPhones(db: PhoneDB) =
+      (db filter contextIs(Business)) ++ (db filter contextIs(Mobile)) map getNumber
   }
 
   import scalaz._
-  import scalaz.syntax.all._
-  import scalaz.std.list._
-  import scalaz.std.option._
+  import Scalaz._
 
-  val v2 = new Lookup {
+  /*
+    <+> defined in Plus, MonadPlus
+   */
+  object v2 extends Lookup {
 
     def onePersonalPhone(db: PhoneDB) = lookup(Home, db) <+> lookup(Mobile, db)
 
     def oneBusinessPhone(db: PhoneDB) = lookup(Business, db) <+> lookup(Mobile, db)
 
     def allBusinessPhones(db: PhoneDB) =
-      (db filter contextIs(Business)) <+> (db filter contextIs(Mobile)) map phoneFromEntry
+      (db filter contextIs(Business)) <+> (db filter contextIs(Mobile)) map getNumber
 
     def allPersonalPhones(db: PhoneDB) =
-      (db filter contextIs(Home)) <+> (db filter contextIs(Mobile)) map phoneFromEntry
+      (db filter contextIs(Home)) <+> (db filter contextIs(Mobile)) map getNumber
   }
 
+  /*
+    Can define a generic version of lookup which returns any desired Monad (supporting MonadPlus)
+   */
   def lookupM[M[_]:MonadPlus,K,V](k: K, l: List[(K,V)]): M[V] = (k,l) match {
     case (_, Nil) => MonadPlus[M].empty
     case (k, (kk,vv) :: rest) =>
@@ -53,12 +169,18 @@ object aryasolutions {
         lookupM[M,K,V](k,rest)
   }
 
-  def lookupMv2[M[_]:MonadPlus,K,V](k: K, l: List[(K,V)]): M[V] =
-    l.foldLeft(PlusEmpty[M].empty[V]) {
+  /*
+    A different implementation of the same
+   */
+  def lookupM_2[M[_]:MonadPlus,K,V](k: K, l: List[(K,V)]): M[V] =
+    l.foldLeft(MonadPlus[M].empty[V]) {
       case (acc,(kk,vv)) => if (k == kk) acc <+> vv.point[M] else acc
     }
 
-  val v3 = new Lookup {
+  /*
+    Can now use lookupM to generate specific lookups
+   */
+  object v3 extends Lookup {
     def lookupOption[K,V] = lookupM[Option,K,V] _
     def lookupList[K,V] = lookupM[List,K,V] _
 
@@ -71,29 +193,61 @@ object aryasolutions {
     def allBusinessPhones(db: PhoneDB) = lookupList(Business, db) <+> lookupList(Mobile,db)
   }
 
-  val v4 = new Lookup {
 
-    // won't compile if not private?
-    private def lookup2[M[_]:MonadPlus](c: Context, db: PhoneDB): M[Phone] =
-      lookupM[M,Context,Phone](c, db)
+  /*
+    Or you can generate the lookup right at the call site.
+   */
+  object v35 extends Lookup {
 
-    private def blahAndMobile[M[_]:MonadPlus](x: Context, db: PhoneDB): M[Phone] =
-      lookup2[M](x, db) <+> lookup2[M](Mobile, db)
+    def lookup[M[_]:MonadPlus](c: Context, db: PhoneDB) = lookupM[M,Context,Phone](c,db)
 
-    /*
-    private def lookup3[N[_]:MonadPlus] = lookupM[N,Context,Phone] _
+    def onePersonalPhone(db: PhoneDB) = lookup[Option](Home, db) <+> lookup[Option](Mobile, db)
 
-    private def blahAndMobile[M[_]:MonadPlus](x: Context, db: PhoneDB): M[Phone] =
-      lookup3[M].apply(x, db) <+> lookup3[M].apply(Mobile,db)
-    */
+    def oneBusinessPhone(db: PhoneDB) = lookup[Option](Business, db) <+> lookup[Option](Mobile, db)
 
-    def onePersonalPhone(db: PhoneDB) = blahAndMobile[Option](Home, db)
+    def allPersonalPhones(db: PhoneDB) = lookup[List](Home, db) <+> lookup[List](Mobile,db)
 
-    def oneBusinessPhone(db: PhoneDB) = blahAndMobile[Option](Business, db)
+    def allBusinessPhones(db: PhoneDB) = lookup[List](Business, db) <+> lookup[List](Mobile,db)
 
-    def allPersonalPhones(db: PhoneDB) = blahAndMobile[List](Home, db)
+  }
 
-    def allBusinessPhones(db: PhoneDB) = blahAndMobile[List](Business, db)
+  /*
+    Noting that each of these looks up numbers for a certain context, and then adds the Mobile numbers,
+    can factor that out, if desired.
+   */
+  object v4 extends Lookup {
+
+    def lookup[M[_]:MonadPlus](c: Context, db: PhoneDB) = lookupM[M,Context,Phone](c,db)
+
+    def whateverPlusMobile[M[_]:MonadPlus](x: Context, db: PhoneDB) = lookup[M](x,db) <+> lookup[M](Mobile,db)
+
+    def onePersonalPhone(db: PhoneDB) = whateverPlusMobile[Option](Home, db)
+
+    def oneBusinessPhone(db: PhoneDB) = whateverPlusMobile[Option](Business, db)
+
+    def allPersonalPhones(db: PhoneDB) = whateverPlusMobile[List](Home, db)
+
+    def allBusinessPhones(db: PhoneDB) = whateverPlusMobile[List](Business, db)
+  }
+
+  /*
+    Or cache the lookup function
+   */
+  object v41 extends Lookup {
+
+    def whateverPlusMobile[M[_]:MonadPlus](x: Context, db: PhoneDB): M[Phone] = {
+      val lookup = lookupM[M,Context,Phone] _
+      lookup(x,db) <+> lookup(Mobile,db)
+    }
+
+    def onePersonalPhone(db: PhoneDB) = whateverPlusMobile[Option](Home, db)
+
+    def oneBusinessPhone(db: PhoneDB) = whateverPlusMobile[Option](Business, db)
+
+    def allPersonalPhones(db: PhoneDB) = whateverPlusMobile[List](Home, db)
+
+    def allBusinessPhones(db: PhoneDB) = whateverPlusMobile[List](Business, db)
   }
 
 }
+
