@@ -1,11 +1,14 @@
+package moviereview
+
 object aryasolutions {
   import moviereview._
 
   /*
     Basic basic.
-    Looks up all params, even if an early one fails.
-    Parameters are named / referenced 5 times.
-    Failure value is specified once.
+    Short-circuits on failure:      No
+    Parameters named / referenced:  5 x N
+    Parameters appear in test:      2 x N
+    Failure value is specified:     1
   */
   def simpleReview1(query: Map[String,Option[String]]) : Option[MovieReview] = {
     val titleMaybe = query.get("title") // 1, 2
@@ -23,9 +26,11 @@ object aryasolutions {
   }
 
   /*
-    Nested ifs avoid unnecessary calls to query.get
-    Parameters are named / referenced 5 times.
-    Failure value is specified 3 times.
+    Nested ifs
+    Short-circuits on failure:      Yes
+    Parameters named / referenced:  5 x N
+    Parameters appear in test:      2 x N
+    Failure value is specified:     1 x N
    */
   def simpleReview2(query: Map[String,Option[String]]) : Option[MovieReview] = {
     val titleMaybe = query.get("title")
@@ -44,9 +49,10 @@ object aryasolutions {
 
   /*
     Nested case statements.
-    Avoids unnecessary calls to query.get
-    Parameters are named / referenced 3 times.
-    Failure value is specified 3 times.
+    Short-circuits on failure:      Yes
+    Parameters named / referenced:  3 x N
+    Parameters appear in test:      1 x N
+    Failure value is specified:     1 x N
    */
   def simpleReview3(query: Map[String,Option[String]]) : Option[MovieReview] = {
     query.get("title") match {
@@ -66,9 +72,10 @@ object aryasolutions {
 
   /*
     Single case statement.
-    Looks up all params, even if an early one fails.
-    Parameters are named / referenced 5 times.
-    Failure value is specified 1 time.
+    Short-circuits on failure:      No
+    Parameters named / referenced:  5 x N
+    Parameters appear in test:      1 x N
+    Failure value is specified:     1 (total)
    */
   def maybeReview(query: Map[String,Option[String]]) : Option[MovieReview] = {
     val titleMaybe = query.get("title")
@@ -86,9 +93,10 @@ object aryasolutions {
 
   /*
     Single case statement, without temp variables.
-    Looks up all params, even if an early one fails.
-    Parameters are named / referenced 3 times.
-    Failure value is specified 1 time.
+    Short-circuits on failure:      No
+    Parameters named / referenced:  3 x N
+    Parameters appear in test:      1 x N
+    Failure value is specified:     1 (total)
    */
   def maybeReview2(query: Map[String,Option[String]]) : Option[MovieReview] = {
     def get = (s:String) => query.get(s)
@@ -125,9 +133,11 @@ object aryasolutions {
 
   /*
     For comprehension.
-    Avoids unnecessary calls to query.get
-    Parameters are named / referenced 3 times.
-    Failure value is defined by Option monad.
+
+    Short-circuits on failure:      Yes
+    Parameters named / referenced:  3 x N
+    Parameters appear in test:      0  (defined by Monad)
+    Failure value is specified:     0  (defined by Monad)
    */
   def maybeReview3(query: Map[String,Option[String]]): Option[MovieReview] = {
     for {
@@ -163,9 +173,11 @@ object aryasolutions {
 
   /*
     Lift `makeMovieReview` function into the Option monad, and call the lifted function instead.
-    Looks up all params, even if an early one fails.
-    Parameters are named / referenced once.
-    Failure value is implied.
+
+    Short-circuits on failure:      No
+    Parameters named / referenced:  1 x N
+    Parameters appear in test:      0  (defined by Monad)
+    Failure value is specified:     0  (defined by Monad)
    */
   def liftReview(query: Map[String, Option[String]]): Option[MovieReview] = {
     def get(s:String) = lookup(s, query)
@@ -177,21 +189,14 @@ object aryasolutions {
     lifted(get("title"), get("user"), get("review"))
   }
 
-  def liftReview2(query: Map[String, Option[String]]): Option[MovieReview] = {
-    def get(s:String) = lookup(s, query)
-
-    // There's an implicit version that works if the target type is known,
-    //   but this was even more typing than the previous one.
-    val lifted: (Option[String],Option[String],Option[String]) => Option[MovieReview] =
-      makeMovieReview
-
-    lifted(get("title"), get("user"), get("review"))
-  }
-
 
   /*
     Apply3 does a lift3 and then applies it.
-    Lazily avoids unnecessary calls to query.get
+
+    Short-circuits on failure:      Yes
+    Parameters named / referenced:  1 x N
+    Parameters appear in test:      0  (defined by Monad)
+    Failure value is specified:     0  (defined by Monad)
    */
   def applyReview(query: Map[String, Option[String]]): Option[MovieReview] = {
     def get(s:String) = lookup(s, query)
@@ -201,9 +206,11 @@ object aryasolutions {
 
   /*
     Apply syntax.  Params come before function, to tell the type inferencer which Monad to lift into.
-    Parameters are named / referenced once.
-    Failure value is implied.
-    Lazily avoids unnecessary calls to query.get
+
+    Short-circuits on failure:      Yes
+    Parameters named / referenced:  1 x N
+    Parameters appear in test:      0  (defined by Monad)
+    Failure value is specified:     0  (defined by Monad)
    */
   def applyReview2(query: Map[String, Option[String]]): Option[MovieReview] = {
     def get(s:String) = lookup(s, query)
@@ -213,9 +220,11 @@ object aryasolutions {
 
   /*
     ApplicativeBuilder syntax.  No need to counts args or ^^^s
-    Parameters are named / referenced once.
-    Failure value is implied.
-    Looks up all params, even if an early one fails.
+
+    Short-circuits on failure:      No
+    Parameters named / referenced:  1 x N
+    Parameters appear in test:      0  (defined by Monad)
+    Failure value is specified:     0  (defined by Monad)
    */
   def applicativeBuilderReview(query: Map[String, Option[String]]): Option[MovieReview] = {
     def get(s:String) = lookup(s, query)
