@@ -1,12 +1,4 @@
-/**
- * Created with IntelliJ IDEA.
- * User: arya
- * Date: 12/1/12
- * Time: 5:05 PM
- * To change this template use File | Settings | File Templates.
- */
-
-object moviereview {
+package object moviereview {
 
   /**
    * Creates a MovieReview instance out of a URL-decoded query parameter map, if possible.

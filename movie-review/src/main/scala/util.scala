@@ -1,10 +1,4 @@
-/**
- * Created with IntelliJ IDEA.
- * User: arya
- * Date: 12/3/12
- * Time: 3:00 PM
- * To change this template use File | Settings | File Templates.
- */
+package moviereview
 
 object util {
   import moviereview._
