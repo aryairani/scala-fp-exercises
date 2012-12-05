@@ -1,5 +1,5 @@
-import util._
 import moviereview.MovieReview
+import moviereview.util._
 
 /**
  * Created with IntelliJ IDEA.
