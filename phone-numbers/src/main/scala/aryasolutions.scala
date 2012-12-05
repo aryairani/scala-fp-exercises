@@ -5,11 +5,10 @@ object aryasolutions {
     Look up a value in an association list (alist)
    */
   def lookup[K,V](k: K, l: List[(K,V)]): Option[V] = (k,l) match {
-    case (_, Nil) =>
-      None
+    case (_, Nil) => None
+
     case (key, (k,v)::rest) =>
-      if (k == key)
-        Some(v)
+      if (k == key) Some(v)
       else lookup(k, rest)
   }
 
