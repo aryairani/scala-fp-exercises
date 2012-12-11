@@ -189,6 +189,22 @@ object aryasolutions {
     lifted(get("title"), get("user"), get("review"))
   }
 
+  /*
+    lift3 could be written like this, given a Monad type (bind & pure).
+    The actual implementation only relies on an Apply type, which is more general
+      (and the implementation is uglier)
+   */
+  def liftM3[M[_], T1, T2, T3, R](f: (T1, T2, T3) => R)(implicit m: Monad[M]) =
+    (m1: M[T1], m2: M[T2], m3: M[T3]) =>
+      m.bind(m1) { t1 =>
+        m.bind(m2) { t2 =>
+          m.bind(m3) { t3 =>
+            m.pure {
+              f(t1, t2, t3)
+            }
+          }
+        }
+      }
 
   /*
     Apply3 does a lift3 and then applies it.
@@ -227,9 +243,18 @@ object aryasolutions {
     Failure value is specified:     0  (defined by Monad)
    */
   def applicativeBuilderReview(query: Map[String, Option[String]]): Option[MovieReview] = {
-    def get(s:String) = lookup(s, query)
+    def get(s:String) =  query.get(s).flatten
 
     get("title") |@| get("user") |@| get("review") apply makeMovieReview
   }
 
+  /*
+    Extend my library?
+   */
+  def extendApply(query: Map[String, Option[String]]): Option[MovieReview] = {
+    def get(s: String) = query.get(s).flatten
+
+    import moviereview.FunctionOps._
+    makeMovieReview.ap(get("title"), get("user"), get("review"))
+  }
 }
