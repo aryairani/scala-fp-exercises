@@ -1,16 +1,37 @@
 object aryasolutions {
   import phonenumbers._
 
-  /*
-    Look up a value in an association list (alist)
+  /**
+   * Look up a value in an association list (alist)
+   * @param k the key to look up
+   * @param l the association list to search through
+   * @tparam Key the key type
+   * @tparam Value the value type
+   * @return the first value associated with `k`, or None.
    */
-  def lookup[K,V](k: K, l: List[(K,V)]): Option[V] = (k,l) match {
+  def lookup[Key,Value](k: Key, l: List[(Key,Value)]): Option[Value] = (k,l) match {
     case (_, Nil) => None
 
     case (key, (k,v)::rest) =>
       if (k == key) Some(v)
       else lookup(k, rest)
   }
+
+  /**
+   * Look up a value in an association list (alist)
+   * (Same as `lookup` above, but in function form (vs method form)
+   *@tparam Key
+   * @tparam Value
+   * @return the first value associated with `k`, or None.
+   */
+  def lookup2[Key,Value] : (Key, List[(Key,Value)]) => Option[Value] = {
+    case (_, Nil) => None
+
+    case (key, (k,v)::rest) =>
+      if (k == key) Some(v)
+      else lookup(k, rest)
+  }
+
 
   object v_1 extends Lookup {
     /*
